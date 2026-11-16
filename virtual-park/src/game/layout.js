@@ -1,5 +1,6 @@
 export const PARK_RADIUS = 34
 export const PLAYER_RADIUS = 0.42
+export const PROXIMITY_RANGE = 14
 export const PATH_HALF = 2.2
 export const PLAZA_RADIUS = 6.2
 export const POND = { x: 15, z: -14, r: 6.6 }

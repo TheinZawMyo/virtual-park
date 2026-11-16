@@ -23,9 +23,9 @@ export default function ChatPanel({ messages, player, players, connected, voiceE
     <section className="pointer-events-auto absolute bottom-24 right-4 z-40 flex max-h-[min(70dvh,34rem)] w-[calc(100%-2rem)] max-w-sm flex-col overflow-hidden rounded-3xl glass-panel animate-rise sm:bottom-5 sm:right-5">
       <header className="flex items-center justify-between border-b border-white/10 px-4 py-3.5">
         <div>
-          <h2 className="text-sm font-semibold text-white">ပန်းခြံစကားပြော</h2>
+          <h2 className="text-sm font-semibold text-white">Lumen Park အဖွဲ့စကားပြော</h2>
           <p className="mt-0.5 text-[10px] text-white/40">
-            {connected ? `${onlineCount} ယောက် အွန်လိုင်း · မိုက်ဖွင့် ${voiceCount} ယောက်` : 'ချိတ်ဆက်နေသည်…'}
+            {connected ? `${onlineCount} ယောက် အနီးရှိ · မိုက်ဖွင့် ${voiceCount} ယောက်` : 'ချိတ်ဆက်နေသည်…'}
           </p>
         </div>
         <button type="button" onClick={onClose} aria-label="Close chat" className="grid h-8 w-8 place-items-center rounded-lg text-white/45 hover:bg-white/10 hover:text-white">
@@ -37,27 +37,38 @@ export default function ChatPanel({ messages, player, players, connected, voiceE
         {messages.length === 0 ? (
           <div className="flex h-full min-h-32 flex-col items-center justify-center text-center">
             <p className="text-xs text-white/65">စကားစပြောလိုက်ပါ</p>
-            <p className="mt-1 max-w-56 text-[10px] leading-relaxed text-white/35">စာပို့တာကို ဒီ park ထဲက ကစားသမားအားလုံး မြင်နိုင်ပါတယ်။</p>
+            <p className="mt-1 max-w-56 text-[10px] leading-relaxed text-white/35">အနီးရှိ ကစားသမားအုပ်စုနဲ့ စကားစပြောလိုက်ပါ။</p>
           </div>
         ) : messages.map((message, index) => {
-          const mine = message.playerId === player?.id
+          const mine = Boolean(message.localEcho) || message.playerId === player?.id
+          const senderName = mine ? (player?.playerName || 'သင်') : (message.playerName || message.displayName || 'Player')
+          const initial = senderName.trim().charAt(0) || '•'
+          const time = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' }).format(message.timestamp || Date.now())
           return (
-            <article key={`${message.timestamp}-${message.playerId}-${index}`} className={`flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
-              <span className="mb-1 px-1 text-[9px] text-white/40">{mine ? 'သင်' : message.playerName}</span>
-              <p className={`max-w-[88%] break-words rounded-2xl px-3 py-2 text-xs leading-relaxed ${mine ? 'rounded-tr-sm bg-[#d4f06a] text-[#14200f]' : 'rounded-tl-sm border border-white/8 bg-white/[0.07] text-white/85'}`}>
-                {message.message}
-              </p>
+            <article key={`${message.timestamp}-${message.playerId}-${index}`} className={`flex items-end gap-2 ${mine ? 'flex-row-reverse' : ''}`}>
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/15 text-[10px] font-semibold text-[#10180f]" style={{ backgroundColor: message.avatarColor || (mine ? player?.avatarColor : '#91a88b') }} aria-hidden="true">
+                {initial}
+              </span>
+              <div className={`flex min-w-0 max-w-[84%] flex-col ${mine ? 'items-end' : 'items-start'}`}>
+                <div className="mb-1 flex items-center gap-2 px-1">
+                  <span className="truncate text-[9px] font-medium text-white/55">{senderName}</span>
+                  <time className="shrink-0 text-[8px] tabular-nums text-white/30">{time}</time>
+                </div>
+                <p className={`break-words rounded-2xl px-3 py-2 text-xs leading-relaxed ${mine ? 'rounded-tr-sm bg-[#d4f06a] text-[#14200f]' : 'rounded-tl-sm border border-white/8 bg-white/[0.07] text-white/85'}`}>
+                  {message.message}
+                </p>
+              </div>
             </article>
           )
         })}
         <div ref={bottomRef} />
       </div>
 
-      {(voiceEnabled || voiceError) && (
-        <div className={`border-t border-white/8 px-4 py-2 text-[10px] leading-relaxed ${voiceError ? 'text-rose-300' : 'text-[#d4f06a]/70'}`}>
-          {voiceError || 'အနီးရှိသူနှင့် အသံပြောရန် နှစ်ဦးစလုံး မိုက်ဖွင့်ထားရမည်'}
-        </div>
-      )}
+      <div className={`border-t border-white/8 px-4 py-2 text-[10px] leading-relaxed ${voiceError ? 'text-rose-300' : 'text-[#d4f06a]/70'}`}>
+        {voiceError || (voiceEnabled
+          ? 'သင်ပြောနေပါသည်။ အနီးရှိကစားသမားများက မိုက်ဖွင့်စရာမလိုဘဲ နားထောင်နိုင်သည်။'
+          : 'အနီးရှိသူပြောသံကို မိုက်ပိတ်ထားလည်း နားထောင်နိုင်သည်။ ကိုယ်ပြောလိုမှ မိုက်ဖွင့်ပါ။')}
+      </div>
 
       <form onSubmit={submit} className="flex items-center gap-2 border-t border-white/10 p-3">
         <input

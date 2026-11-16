@@ -12,6 +12,7 @@ import { parkApi } from "./api"
 import { useParkWS } from "./hooks/useParkWS"
 import { useParkVoice } from "./hooks/useParkVoice"
 import OtherPlayers from "./components/scene/OtherPlayers"
+import { PROXIMITY_RANGE } from "./game/layout"
 
 function detectTouch() {
   return (
@@ -42,9 +43,15 @@ export default function App() {
   const toastTimer = useRef(null)
   const [player, setPlayer] = useState(null)
   const [remotePlayers, setRemotePlayers] = useState([])
+  const [localPosition, setLocalPosition] = useState(() => ({ x: game.position.x, z: game.position.z }))
   const [chatMessages, setChatMessages] = useState([])
   const [wsError, setWsError] = useState(null)
   const voiceSignalRef = useRef(null)
+  const nearbyPlayers = remotePlayers.filter((peer) =>
+    peer.id !== player?.id && Math.hypot((peer.x ?? 0) - localPosition.x, (peer.z ?? 0) - localPosition.z) <= PROXIMITY_RANGE
+  )
+  const nearbyPlayerIds = new Set(nearbyPlayers.map((peer) => peer.id))
+  const nearbyPlayerIdsKey = [...nearbyPlayerIds].sort((a, b) => Number(a) - Number(b)).join(',')
 
   const showToast = useCallback((title, detail) => {
     setToast({ title, detail })
@@ -92,7 +99,7 @@ export default function App() {
           setRemotePlayers((prev) =>
             prev.map((p) =>
               p.id === msg.playerId
-                ? { ...p, x: msg.x, y: msg.y, z: msg.z, rotation: msg.rotation }
+                ? { ...p, x: msg.x, y: msg.y, z: msg.z, rotation: msg.rotation, voiceEnabled: Boolean(msg.voiceEnabled) }
                 : p
             )
           )
@@ -114,6 +121,7 @@ export default function App() {
           )
           break
         case "chat_message":
+          if (!nearbyPlayerIds.has(msg.playerId)) break
           setChatMessages((previous) => [...previous.slice(-49), msg])
           setChatOpen(true)
           break
@@ -138,11 +146,28 @@ export default function App() {
   voiceSignalRef.current = handleSignal
 
   useEffect(() => {
+    if (nearbyPlayers.length === 0) {
+      setChatOpen(false)
+      setChatMessages([])
+      return
+    }
+    setChatMessages((messages) => messages.filter((message) =>
+      message.localEcho || nearbyPlayerIds.has(message.playerId)
+    ))
+  }, [nearbyPlayerIdsKey, player?.id])
+
+  useEffect(() => {
     if (wsConnError) {
       showToast("Connection error", wsConnError)
       setWsError(null)
     }
   }, [wsConnError, showToast])
+
+  useEffect(() => {
+    if (!wsError) return
+    showToast("Park chat", wsError)
+    setWsError(null)
+  }, [wsError, showToast])
 
   useEffect(() => {
     if (voiceError) showToast("Voice chat", voiceError)
@@ -203,15 +228,21 @@ export default function App() {
 
   const handleSendChat = useCallback((text) => {
     const message = text.trim().slice(0, 500)
-    if (!message || !sendChat(message)) return
+    const hasNearbyPlayer = remotePlayers.some((peer) =>
+      peer.id !== player?.id && Math.hypot((peer.x ?? 0) - game.position.x, (peer.z ?? 0) - game.position.z) <= PROXIMITY_RANGE
+    )
+    if (!message || !hasNearbyPlayer) return
+    const sent = sendChat(message)
     setChatMessages((previous) => [...previous.slice(-49), {
       playerId: player?.id,
       playerName: player?.playerName || "You",
       avatarColor: player?.avatarColor,
       message,
       timestamp: Date.now(),
+      localEcho: true,
     }])
-  }, [player?.id, player?.playerName, player?.avatarColor, sendChat])
+    if (!sent) showToast("Message not sent", "Reconnecting to the park. Try again shortly.")
+  }, [remotePlayers, player?.id, player?.playerName, player?.avatarColor, sendChat, showToast])
 
   const handleStart = useCallback(
     ({ playerName, avatarType, avatarColor }) => {
@@ -243,8 +274,18 @@ export default function App() {
   useEffect(() => {
     if (!started || !player) return
     let lastSend = 0
+    let lastPositionUpdate = 0
     const raf = requestAnimationFrame(function tick(now) {
       requestAnimationFrame(tick)
+      if (now - lastPositionUpdate >= 150) {
+        lastPositionUpdate = now
+        const nextPosition = { x: game.position.x, z: game.position.z }
+        setLocalPosition((previous) =>
+          Math.hypot(previous.x - nextPosition.x, previous.z - nextPosition.z) >= 0.2
+            ? nextPosition
+            : previous
+        )
+      }
       if (now - lastSend < 100) return
       lastSend = now
       movePlayer(game.position.x, 0, game.position.z, { y: game.playerYaw })
@@ -324,7 +365,8 @@ export default function App() {
             onToggleHelp={toggleHelp}
             onFullscreen={toggleFullscreen}
             chatOpen={chatOpen}
-            onToggleChat={() => setChatOpen((open) => !open)}
+            chatAvailable={nearbyPlayers.length > 0}
+            onToggleChat={() => setChatOpen((open) => nearbyPlayers.length > 0 && !open)}
             voiceEnabled={voiceEnabled}
             voiceAvailable={Boolean(connected && player?.id)}
             onToggleVoice={toggleVoice}
@@ -334,8 +376,8 @@ export default function App() {
             <ChatPanel
               messages={chatMessages}
               player={player}
-              players={remotePlayers}
-              connected={connected && Boolean(player?.id)}
+              players={nearbyPlayers}
+              connected={connected && Boolean(player?.id) && nearbyPlayers.length > 0}
               voiceEnabled={voiceEnabled}
               voiceError={voiceError}
               onSend={handleSendChat}

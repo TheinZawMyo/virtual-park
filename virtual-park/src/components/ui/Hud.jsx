@@ -72,6 +72,7 @@ export default function Hud({
   onToggleHelp,
   onFullscreen,
   chatOpen,
+  chatAvailable,
   onToggleChat,
   voiceEnabled,
   voiceAvailable,
@@ -148,11 +149,16 @@ export default function Hud({
         </div>
 
         <div className="pointer-events-auto flex items-center gap-2">
-          <IconButton label="Open park chat" active={chatOpen} onClick={onToggleChat}>
+          <IconButton
+            label={chatAvailable ? 'Open nearby player chat' : 'Move closer to a player to chat'}
+            active={chatOpen}
+            onClick={onToggleChat}
+            disabled={!chatAvailable}
+          >
             <MessageCircle size={17} />
           </IconButton>
           <IconButton
-            label={voiceEnabled ? 'Turn off microphone' : 'Enable voice chat'}
+            label={voiceEnabled ? 'Turn off your microphone' : 'Turn on your mic to speak'}
             active={voiceEnabled}
             onClick={onToggleVoice}
             disabled={!voiceAvailable && !voiceEnabled}

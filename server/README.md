@@ -47,9 +47,9 @@ Connect to `/ws`. Messages use JSON. The client can send:
 - `leave_park` — leave the current park.
 - `player_move` — broadcast and save the player's position and rotation.
 - `get_players` — request the current park player list.
-- `chat_message` — send a text message to the park room (maximum 500 characters).
+- `chat_message` — send a text message to players within 14 park units (maximum 500 characters).
 - `voice_status` — announce whether the player has enabled their microphone.
-- `voice_signal` — relay a WebRTC offer, answer, or ICE candidate to a player in the same park room.
+- `voice_signal` — relay a WebRTC offer, answer, or ICE candidate to a nearby player in the same park room.
 - `ping` — request a heartbeat response.
 
 The server sends `welcome`, `joined_park`, `player_list`, `player_joined`, `player_left`, `player_moved`, `chat_message`, `voice_status`, `voice_signal`, `left_park`, `pong`, and `error` messages as appropriate.

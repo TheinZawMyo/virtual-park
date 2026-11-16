@@ -118,7 +118,7 @@ export function useParkWS({ parkId, playerName, avatarType, avatarColor, onMessa
 
   const sendChat = useCallback((message) => {
     const { parkId: pId, playerName: pName } = configRef.current
-    send({ type: 'chat_message', parkId: pId, playerName: pName, message })
+    return send({ type: 'chat_message', parkId: pId, playerName: pName, message })
   }, [send])
 
   const sendVoiceStatus = useCallback((enabled) => {

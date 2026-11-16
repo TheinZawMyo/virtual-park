@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { game } from '../game/state'
+import { PROXIMITY_RANGE } from '../game/layout'
 
 const turnUrls = import.meta.env.VITE_TURN_URLS?.split(',').map((url) => url.trim()).filter(Boolean) || []
 const iceServers = [
@@ -11,7 +12,6 @@ const iceServers = [
   }] : []),
 ]
 const RTC_CONFIG = { iceServers }
-const VOICE_RANGE = 14
 
 export function useParkVoice({ playerId, players, sendVoiceSignal, sendVoiceStatus }) {
   const [enabled, setEnabled] = useState(false)
@@ -27,18 +27,33 @@ export function useParkVoice({ playerId, players, sendVoiceSignal, sendVoiceStat
   playersRef.current = players
   signalRef.current = sendVoiceSignal
 
-  const peerIdsKey = availablePeerIds.join(',')
+  useEffect(() => {
+    const resumeRemoteAudio = () => {
+      audioRef.current.forEach((audio) => audio.play().catch(() => {}))
+    }
+    window.addEventListener('pointerdown', resumeRemoteAudio)
+    window.addEventListener('keydown', resumeRemoteAudio)
+    return () => {
+      window.removeEventListener('pointerdown', resumeRemoteAudio)
+      window.removeEventListener('keydown', resumeRemoteAudio)
+    }
+  }, [])
+
+  const peerIdsKey = availablePeerIds.map((id) => {
+    const peer = playersRef.current.find((candidate) => candidate.id === id)
+    return `${id}:${peer?.voiceEnabled ? 1 : 0}`
+  }).join(',')
 
   useEffect(() => {
-    if (!enabled || !playerId) {
+    if (!playerId) {
       setAvailablePeerIds((current) => current.length ? [] : current)
       return undefined
     }
 
     const updateNearbyPlayers = () => {
       const nearby = playersRef.current
-        .filter((peer) => peer.id !== playerId && peer.voiceEnabled &&
-          Math.hypot((peer.x ?? 0) - game.position.x, (peer.z ?? 0) - game.position.z) <= VOICE_RANGE)
+        .filter((peer) => peer.id !== playerId &&
+          Math.hypot((peer.x ?? 0) - game.position.x, (peer.z ?? 0) - game.position.z) <= PROXIMITY_RANGE)
         .map((peer) => peer.id)
         .sort((a, b) => Number(a) - Number(b))
       setAvailablePeerIds((current) =>
@@ -49,7 +64,7 @@ export function useParkVoice({ playerId, players, sendVoiceSignal, sendVoiceStat
     }
 
     updateNearbyPlayers()
-    const timer = window.setInterval(updateNearbyPlayers, 400)
+    const timer = window.setInterval(updateNearbyPlayers, 120)
     return () => window.clearInterval(timer)
   }, [enabled, playerId])
 
@@ -108,7 +123,8 @@ export function useParkVoice({ playerId, players, sendVoiceSignal, sendVoiceStat
   const handleSignal = useCallback(async ({ fromPlayerId, signal }) => {
     if (!fromPlayerId || !signal) return
     const peerId = Number(fromPlayerId)
-    if (!enabled) return
+    const peer = playersRef.current.find((candidate) => candidate.id === peerId)
+    if (!peer || Math.hypot((peer.x ?? 0) - game.position.x, (peer.z ?? 0) - game.position.z) > PROXIMITY_RANGE) return
     try {
       const pc = ensurePeer(peerId)
       if (signal.description) {
@@ -135,14 +151,13 @@ export function useParkVoice({ playerId, players, sendVoiceSignal, sendVoiceStat
     } catch (err) {
       console.warn('[voice] unable to apply peer signal', err)
     }
-  }, [enabled, ensurePeer])
+  }, [ensurePeer])
 
   const toggleVoice = useCallback(async () => {
     if (enabled) {
       setEnabled(false)
       setError('')
       sendVoiceStatus(false)
-      peersRef.current.forEach((_, peerId) => closePeer(peerId))
       streamRef.current?.getTracks().forEach((track) => track.stop())
       streamRef.current = null
       return
@@ -165,18 +180,23 @@ export function useParkVoice({ playerId, players, sendVoiceSignal, sendVoiceStat
         ? 'Microphone access was denied. Allow mic access in browser settings and try again.'
         : err?.message || 'Could not start microphone.')
     }
-  }, [enabled, closePeer, sendVoiceStatus])
+  }, [enabled, sendVoiceStatus])
 
   useEffect(() => {
-    if (!enabled || !playerId) {
+    if (!playerId) {
       peersRef.current.forEach((_, peerId) => closePeer(peerId))
       return
     }
 
     for (const peerId of availablePeerIds) {
+      const peer = playersRef.current.find((candidate) => candidate.id === peerId)
+      const remoteVoiceEnabled = Boolean(peer?.voiceEnabled)
+      if (!enabled && !remoteVoiceEnabled) continue
+
       const pc = ensurePeer(peerId)
-      // Use one offerer per pair to avoid offer collisions.
-      if (Number(playerId) < Number(peerId) && pc.signalingState === 'stable') {
+      // A speaker starts the session for listeners; when both speak, use one offerer.
+      const shouldOffer = enabled && (!remoteVoiceEnabled || Number(playerId) < Number(peerId))
+      if (shouldOffer && pc.signalingState === 'stable') {
         pc.createOffer()
           .then((offer) => pc.setLocalDescription(offer))
           .then(() => signalRef.current?.(peerId, { description: pc.localDescription.toJSON() }))
@@ -184,7 +204,10 @@ export function useParkVoice({ playerId, players, sendVoiceSignal, sendVoiceStat
       }
     }
 
-    const active = new Set(availablePeerIds)
+    const active = new Set(availablePeerIds.filter((peerId) => {
+      const peer = playersRef.current.find((candidate) => candidate.id === peerId)
+      return enabled || Boolean(peer?.voiceEnabled)
+    }))
     peersRef.current.forEach((_, peerId) => {
       if (!active.has(peerId)) closePeer(peerId)
     })

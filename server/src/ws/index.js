@@ -1,6 +1,8 @@
 import { WebSocketServer, WebSocket } from "ws"
 import { ParkPlayerModel, PlayerModel } from "../models/park.js"
 
+const CHAT_VOICE_RANGE = 14
+
 export class ParkWebSocketServer {
   constructor(server, options = {}) {
     this.wss = new WebSocketServer({ server, path: options.path || "/ws" })
@@ -19,6 +21,9 @@ export class ParkWebSocketServer {
         playerName: null,
         avatarType: null,
         avatarColor: null,
+        x: 0,
+        y: 0,
+        z: 0,
       })
 
       console.log(`[ws] client connected: ${clientId}`)
@@ -89,6 +94,9 @@ export class ParkWebSocketServer {
         info.avatarType = avatarType || "default"
         info.avatarColor = avatarColor || "#ffffff"
         info.voiceEnabled = false
+        info.x = Number.isFinite(msg.x) ? msg.x : 0
+        info.y = Number.isFinite(msg.y) ? msg.y : 0
+        info.z = Number.isFinite(msg.z) ? msg.z : 0
 
         if (!this.parkRooms.has(parkId)) {
           this.parkRooms.set(parkId, new Set())
@@ -98,9 +106,9 @@ export class ParkWebSocketServer {
         await ParkPlayerModel.upsert({
           parkId,
           playerId: player.id,
-          x: msg.x ?? 0,
-          y: msg.y ?? 0,
-          z: msg.z ?? 0,
+          x: info.x,
+          y: info.y,
+          z: info.z,
           rotation: msg.rotation ?? {},
         })
 
@@ -127,9 +135,9 @@ export class ParkWebSocketServer {
               avatarType: player.avatar_type,
               avatarColor: player.avatar_color,
               voiceEnabled: false,
-              x: msg.x ?? 0,
-              y: msg.y ?? 0,
-              z: msg.z ?? 0,
+              x: info.x,
+              y: info.y,
+              z: info.z,
               rotation: msg.rotation ?? {},
             },
           },
@@ -154,6 +162,9 @@ export class ParkWebSocketServer {
         }
 
         const { x, y, z, rotation } = msg
+        if (Number.isFinite(x)) info.x = x
+        if (Number.isFinite(y)) info.y = y
+        if (Number.isFinite(z)) info.z = z
         await ParkPlayerModel.upsert({
           parkId: info.parkId,
           playerId: info.playerId,
@@ -169,10 +180,11 @@ export class ParkWebSocketServer {
             type: "player_moved",
             playerId: info.playerId,
             playerName: info.playerName,
-            x,
-            y,
-            z,
+            x: info.x,
+            y: info.y,
+            z: info.z,
             rotation,
+            voiceEnabled: Boolean(info.voiceEnabled),
           },
           ws
         )
@@ -191,7 +203,7 @@ export class ParkWebSocketServer {
           return
         }
 
-        this.broadcastToPark(info.parkId, {
+        const recipients = this.broadcastToNearby(info.parkId, info, {
           type: "chat_message",
           playerId: info.playerId,
           playerName: info.playerName,
@@ -199,6 +211,9 @@ export class ParkWebSocketServer {
           message,
           timestamp: Date.now(),
         }, ws)
+        if (recipients === 0) {
+          this.send(ws, { type: "error", error: "No players are nearby to receive your message." })
+        }
         break
       }
 
@@ -226,7 +241,8 @@ export class ParkWebSocketServer {
         if (!Number.isInteger(targetId) || !msg.signal || typeof msg.signal !== "object") return
         for (const peerWs of room || []) {
           const peer = this.clients.get(peerWs)
-          if (peer?.playerId === targetId && peer.parkId === info.parkId) {
+          const distance = peer ? Math.hypot((peer.x ?? 0) - info.x, (peer.z ?? 0) - info.z) : Infinity
+          if (peer?.playerId === targetId && peer.parkId === info.parkId && distance <= CHAT_VOICE_RANGE) {
             this.send(peerWs, {
               type: "voice_signal",
               fromPlayerId: info.playerId,
@@ -287,6 +303,9 @@ export class ParkWebSocketServer {
     info.avatarType = null
     info.avatarColor = null
     info.voiceEnabled = false
+    info.x = 0
+    info.y = 0
+    info.z = 0
   }
 
   async handleDisconnect(ws) {
@@ -327,6 +346,24 @@ export class ParkWebSocketServer {
         ws.send(json)
       }
     }
+  }
+
+  broadcastToNearby(parkId, origin, payload, excludeWs) {
+    const room = this.parkRooms.get(parkId)
+    if (!room) return 0
+    const json = JSON.stringify(payload)
+    let recipients = 0
+    for (const ws of room) {
+      if (ws === excludeWs || ws.readyState !== WebSocket.OPEN) continue
+      const peer = this.clients.get(ws)
+      if (!peer || peer.parkId !== parkId) continue
+      const distance = Math.hypot((peer.x ?? 0) - origin.x, (peer.z ?? 0) - origin.z)
+      if (distance <= CHAT_VOICE_RANGE) {
+        ws.send(json)
+        recipients += 1
+      }
+    }
+    return recipients
   }
 
   broadcastAll(payload, excludeWs) {

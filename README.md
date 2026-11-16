@@ -7,8 +7,8 @@ Lumen Park is a small 3D park built with React, Three.js, and React Three Fiber.
 - Walk around the park with WASD or the on-screen joystick.
 - Choose an Explorer, Robot, or Dino avatar.
 - See other players and their movement in real time.
-- Send text messages to everyone in the park using the chat button in the upper-right corner.
-- Turn on the microphone to talk with other mic-enabled players nearby. Voice connects within about 14 game units.
+- Send group text messages to nearby players using the chat button in the upper-right corner. The chat closes when no one is within about 14 game units.
+- Turn on the microphone to talk with nearby players. Voice and text both disconnect across the same 14-unit range; listeners do not need to turn on their microphones.
 - Walk up to the Burmese information sign (`လမ်းညွှန်ဆိုင်းဘုတ်`) and press `E` or use its prompt to open the detailed park map.
 
 ## Requirements
@@ -53,7 +53,7 @@ The backend API is available at `http://localhost:5001/api`; the WebSocket endpo
 ## Chat and microphone
 
 - Text chat is shared with players in the same park. Open it with the message icon.
-- Voice chat is proximity-based. Both players must turn on their microphone and allow browser access. The browser only requests microphone permission after the mic button is clicked.
+- Voice chat is proximity-based. Nearby players can listen with their microphone off; only players who want to speak need to turn their microphone on and allow browser access.
 - Microphone access requires HTTPS or `localhost`.
 - Voice media is sent peer-to-peer; the WebSocket server relays WebRTC setup messages.
 - The app uses a public STUN server by default. Networks that block direct peer connections may require a TURN service. Configure one in `virtual-park/.env`:
