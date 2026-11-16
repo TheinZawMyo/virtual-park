@@ -98,6 +98,41 @@ export function Lamppost({ lamp, shadows, lampIntensity }) {
 }
 
 export function InfoBoard({ shadows }) {
+  const signTexture = useMemo(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 1024
+    canvas.height = 480
+    const context = canvas.getContext('2d')
+    context.fillStyle = '#efe8d2'
+    context.fillRect(0, 0, canvas.width, canvas.height)
+    context.strokeStyle = '#78975b'
+    context.lineWidth = 12
+    context.strokeRect(22, 22, canvas.width - 44, canvas.height - 44)
+    context.fillStyle = '#314a39'
+    context.textAlign = 'center'
+    context.textBaseline = 'middle'
+    context.font = 'bold 66px "Noto Sans Myanmar", "Myanmar Text", sans-serif'
+    context.fillText('လမ်းညွှန်ဆိုင်းဘုတ်', 512, 108)
+    context.strokeStyle = '#78975b'
+    context.lineWidth = 14
+    context.lineCap = 'round'
+    context.beginPath()
+    context.moveTo(510, 190)
+    context.lineTo(510, 360)
+    context.moveTo(350, 275)
+    context.lineTo(670, 275)
+    context.stroke()
+    for (const [x, y] of [[510, 190], [510, 360], [350, 275], [670, 275]]) {
+      context.beginPath()
+      context.fillStyle = '#d4a73d'
+      context.arc(x, y, 18, 0, Math.PI * 2)
+      context.fill()
+    }
+    const texture = new THREE.CanvasTexture(canvas)
+    texture.colorSpace = THREE.SRGBColorSpace
+    return texture
+  }, [])
+
   return (
     <group position={[BOARD.x, 0, BOARD.z]} rotation={[0, BOARD.rotation, 0]}>
       {[-0.92, 0.92].map((x) => (
@@ -112,32 +147,7 @@ export function InfoBoard({ shadows }) {
       </mesh>
       <mesh position={[0, 1.52, 0.065]}>
         <planeGeometry args={[1.9, 0.94]} />
-        <meshStandardMaterial color="#efe8d2" roughness={0.95} />
-      </mesh>
-
-      <mesh position={[0, 1.54, 0.075]}>
-        <boxGeometry args={[0.1, 0.66, 0.01]} />
-        <meshStandardMaterial color="#78975b" />
-      </mesh>
-      <mesh position={[0, 1.54, 0.075]}>
-        <boxGeometry args={[0.76, 0.1, 0.01]} />
-        <meshStandardMaterial color="#78975b" />
-      </mesh>
-      <mesh position={[0.34, 1.72, 0.08]} rotation={[0, 0, -0.6]}>
-        <boxGeometry args={[0.5, 0.055, 0.01]} />
-        <meshStandardMaterial color="#4f7d74" />
-      </mesh>
-      <mesh position={[0.31, 1.32, 0.08]} rotation={[0, 0, 0.5]}>
-        <boxGeometry args={[0.4, 0.05, 0.01]} />
-        <meshStandardMaterial color="#b48b5b" />
-      </mesh>
-      <mesh position={[-0.56, 1.72, 0.08]}>
-        <circleGeometry args={[0.1, 16]} />
-        <meshStandardMaterial color="#d4f06a" />
-      </mesh>
-      <mesh position={[-0.56, 1.66, 0.08]}>
-        <boxGeometry args={[0.16, 0.015, 0.01]} />
-        <meshStandardMaterial color="#5a6b4a" />
+        <meshBasicMaterial map={signTexture} toneMapped={false} />
       </mesh>
       <mesh position={[0, 0.5, 0]} castShadow={shadows}>
         <boxGeometry args={[1.92, 0.16, 0.14]} />

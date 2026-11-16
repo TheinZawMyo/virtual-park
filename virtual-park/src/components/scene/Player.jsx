@@ -53,7 +53,7 @@ function cameraClearance(originX, originY, originZ, dx, dy, dz) {
   return 1
 }
 
-export default function Player({ shadows, onInteract }) {
+export default function Player({ shadows, onInteract, avatarType = 'default', avatarColor = JACKET }) {
   const group = useRef()
   const body = useRef()
   const leftLeg = useRef()
@@ -362,7 +362,7 @@ export default function Player({ shadows, onInteract }) {
 
         <mesh position={[0, 1.08, 0]} castShadow={shadows}>
           <capsuleGeometry args={[0.22, 0.4, 6, 12]} />
-          <meshStandardMaterial color={JACKET} roughness={0.8} />
+          <meshStandardMaterial color={avatarColor} roughness={0.8} />
         </mesh>
 
         <mesh position={[0, 1.13, -0.21]} castShadow={shadows}>
@@ -377,7 +377,7 @@ export default function Player({ shadows, onInteract }) {
         <group ref={leftArm} position={[-0.355, 1.32, 0]} rotation={[0, 0, 0.08]}>
           <mesh position={[0, -0.22, 0]} castShadow={shadows}>
             <capsuleGeometry args={[0.065, 0.38, 4, 8]} />
-            <meshStandardMaterial color={JACKET} roughness={0.8} />
+            <meshStandardMaterial color={avatarColor} roughness={0.8} />
           </mesh>
           <mesh position={[0, -0.46, 0]} castShadow={shadows}>
             <sphereGeometry args={[0.068, 10, 10]} />
@@ -387,7 +387,7 @@ export default function Player({ shadows, onInteract }) {
         <group ref={rightArm} position={[0.355, 1.32, 0]} rotation={[0, 0, -0.08]}>
           <mesh position={[0, -0.22, 0]} castShadow={shadows}>
             <capsuleGeometry args={[0.065, 0.38, 4, 8]} />
-            <meshStandardMaterial color={JACKET} roughness={0.8} />
+            <meshStandardMaterial color={avatarColor} roughness={0.8} />
           </mesh>
           <mesh position={[0, -0.46, 0]} castShadow={shadows}>
             <sphereGeometry args={[0.068, 10, 10]} />
@@ -395,14 +395,50 @@ export default function Player({ shadows, onInteract }) {
           </mesh>
         </group>
 
-        <mesh position={[0, 1.61, 0]} castShadow={shadows}>
-          <sphereGeometry args={[0.185, 20, 20]} />
-          <meshStandardMaterial color={SKIN} roughness={0.7} />
-        </mesh>
-        <mesh position={[0, 1.68, -0.01]} scale={[1, 0.74, 1]} castShadow={shadows}>
-          <sphereGeometry args={[0.192, 20, 20]} />
-          <meshStandardMaterial color={HAIR} roughness={0.95} />
-        </mesh>
+        {avatarType === 'robot' ? (
+          <>
+            <mesh position={[0, 1.62, 0]} castShadow={shadows}>
+              <boxGeometry args={[0.38, 0.34, 0.34]} />
+              <meshStandardMaterial color="#c8d8d4" metalness={0.45} roughness={0.38} />
+            </mesh>
+            <mesh position={[0, 1.84, 0]} castShadow={shadows}>
+              <cylinderGeometry args={[0.025, 0.025, 0.12, 8]} />
+              <meshStandardMaterial color={avatarColor} emissive={avatarColor} emissiveIntensity={0.35} />
+            </mesh>
+            <mesh position={[0, 1.91, 0]}>
+              <sphereGeometry args={[0.055, 12, 12]} />
+              <meshStandardMaterial color={avatarColor} emissive={avatarColor} emissiveIntensity={0.8} />
+            </mesh>
+          </>
+        ) : avatarType === 'dino' ? (
+          <>
+            <mesh position={[0, 1.62, 0]} castShadow={shadows}>
+              <sphereGeometry args={[0.2, 18, 14]} />
+              <meshStandardMaterial color={avatarColor} roughness={0.72} />
+            </mesh>
+            <mesh position={[0, 1.56, 0.18]} castShadow={shadows}>
+              <coneGeometry args={[0.11, 0.27, 12]} />
+              <meshStandardMaterial color={avatarColor} roughness={0.72} />
+            </mesh>
+            {[-0.12, 0, 0.12].map((x) => (
+              <mesh key={x} position={[x, 1.85, -0.02]} rotation={[0, 0, -x * 3]} castShadow={shadows}>
+                <coneGeometry args={[0.065, 0.14, 6]} />
+                <meshStandardMaterial color="#d4f06a" roughness={0.75} />
+              </mesh>
+            ))}
+          </>
+        ) : (
+          <>
+            <mesh position={[0, 1.61, 0]} castShadow={shadows}>
+              <sphereGeometry args={[0.185, 20, 20]} />
+              <meshStandardMaterial color={SKIN} roughness={0.7} />
+            </mesh>
+            <mesh position={[0, 1.68, -0.01]} scale={[1, 0.74, 1]} castShadow={shadows}>
+              <sphereGeometry args={[0.192, 20, 20, 0, Math.PI * 2, 0, Math.PI * 0.58]} />
+              <meshStandardMaterial color={HAIR} roughness={0.95} />
+            </mesh>
+          </>
+        )}
         <mesh position={[-0.066, 1.62, 0.166]}>
           <sphereGeometry args={[0.021, 8, 8]} />
           <meshStandardMaterial color="#26301f" roughness={0.4} />
@@ -411,10 +447,10 @@ export default function Player({ shadows, onInteract }) {
           <sphereGeometry args={[0.021, 8, 8]} />
           <meshStandardMaterial color="#26301f" roughness={0.4} />
         </mesh>
-        <mesh position={[0, 1.46, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        {avatarType === 'default' && <mesh position={[0, 1.46, 0]} rotation={[Math.PI / 2, 0, 0]}>
           <torusGeometry args={[0.155, 0.045, 8, 20]} />
           <meshStandardMaterial color={SCARF} roughness={0.75} />
-        </mesh>
+        </mesh>}
 
         <mesh position={[-0.16, 1.2, 0.205]} rotation={[0, 0, 0.12]}>
           <boxGeometry args={[0.045, 0.5, 0.02]} />

@@ -1,6 +1,15 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 
-const WS_BASE = import.meta.env.VITE_WS_BASE || 'ws://localhost:5001/ws'
+const WS_BASE = import.meta.env.VITE_WS_BASE || `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`
+
+function getSessionPlayerKey() {
+  let key = sessionStorage.getItem('vp_player_key')
+  if (!key) {
+    key = `visitor-${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`
+    sessionStorage.setItem('vp_player_key', key)
+  }
+  return key
+}
 
 export function useParkWS({ parkId, playerName, avatarType, avatarColor, onMessage }) {
   const wsRef = useRef(null)
@@ -31,19 +40,6 @@ export function useParkWS({ parkId, playerName, avatarType, avatarColor, onMessa
     ws.onopen = () => {
       setConnected(true)
       setError(null)
-      // Re-join park if we were previously in one
-      const { parkId: pId, playerName: pName, avatarType: aType, avatarColor: aColor } = configRef.current
-      if (pId && pName) {
-        ws.send(JSON.stringify({
-          type: 'join_park',
-          parkId: pId,
-          playerName: pName,
-          avatarType: aType,
-          avatarColor: aColor,
-          x: 0, y: 0, z: 0,
-          rotation: { y: 0 },
-        }))
-      }
     }
 
     ws.onmessage = (event) => {
@@ -87,6 +83,7 @@ export function useParkWS({ parkId, playerName, avatarType, avatarColor, onMessa
       send({
         type: 'join_park',
         parkId: pId,
+        playerKey: getSessionPlayerKey(),
         playerName: pName,
         avatarType: aType,
         avatarColor: aColor,
@@ -122,6 +119,14 @@ export function useParkWS({ parkId, playerName, avatarType, avatarColor, onMessa
   const sendChat = useCallback((message) => {
     const { parkId: pId, playerName: pName } = configRef.current
     send({ type: 'chat_message', parkId: pId, playerName: pName, message })
+  }, [send])
+
+  const sendVoiceStatus = useCallback((enabled) => {
+    send({ type: 'voice_status', enabled })
+  }, [send])
+
+  const sendVoiceSignal = useCallback((toPlayerId, signal) => {
+    send({ type: 'voice_signal', toPlayerId, signal })
   }, [send])
 
   const getPlayers = useCallback(() => {
@@ -161,6 +166,8 @@ export function useParkWS({ parkId, playerName, avatarType, avatarColor, onMessa
     leavePark,
     movePlayer,
     sendChat,
+    sendVoiceStatus,
+    sendVoiceSignal,
     getPlayers,
   }
 }

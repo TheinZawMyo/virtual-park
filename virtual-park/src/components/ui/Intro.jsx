@@ -1,10 +1,10 @@
 import { useState } from "react"
-import { ArrowRight, Armchair, Leaf, MousePointer, Move, Sparkles, User, Package } from "lucide-react"
+import { ArrowRight, Armchair, Bot, Bug, Leaf, MousePointer, Move, UserRound } from "lucide-react"
 
 const AVATARS = [
-  { id: "default", label: "Default", color: "#d9a06b", icon: User },
-  { id: "robot", label: "Robot", color: "#ff6b6b", icon: Package },
-  { id: "dino", label: "Dino", color: "#4ecdc4", icon: Armchair },
+  { id: "default", label: "Explorer", color: "#d9a06b", icon: UserRound },
+  { id: "robot", label: "Robot", color: "#ff6b6b", icon: Bot },
+  { id: "dino", label: "Dino", color: "#4ecdc4", icon: Bug },
 ]
 
 export default function Intro({ onStart, isTouch }) {
@@ -37,18 +37,20 @@ export default function Intro({ onStart, isTouch }) {
   ]
 
   const handleStart = () => {
-    localStorage.setItem("vp_player_name", playerName)
+    const name = playerName.trim() || "Visitor"
+    setPlayerName(name)
+    localStorage.setItem("vp_player_name", name)
     localStorage.setItem("vp_avatar_type", avatarType)
     localStorage.setItem("vp_avatar_color", avatarColor)
-    onStart({ playerName, avatarType, avatarColor })
+    onStart({ playerName: name, avatarType, avatarColor })
   }
 
   return (
-    <div className="absolute inset-0 z-40 flex items-center justify-center overflow-hidden bg-gradient-to-b from-[#050b07]/80 via-[#050b07]/25 to-[#050b07]/90 p-5">
+    <div className="absolute inset-0 z-40 overflow-y-auto overscroll-contain bg-gradient-to-b from-[#050b07]/80 via-[#050b07]/25 to-[#050b07]/90 px-4 py-6 sm:px-6 sm:py-8">
       <div className="pointer-events-none absolute -left-28 top-1/4 h-80 w-80 rounded-full bg-[#d4f06a]/10 blur-3xl" />
       <div className="pointer-events-none absolute -right-24 bottom-1/4 h-72 w-72 rounded-full bg-[#8fc9b0]/10 blur-3xl" />
 
-      <div className="animate-rise relative w-full max-w-2xl text-center">
+      <div className="animate-rise relative mx-auto flex min-h-full w-full max-w-2xl flex-col justify-center py-2 text-center">
         <div className="mb-5 inline-flex max-w-full items-center gap-2 rounded-full border border-[#d4f06a]/30 bg-[#d4f06a]/10 px-3 py-1.5 text-[9px] font-medium uppercase tracking-[0.16em] text-[#d4f06a] sm:text-[10px] sm:tracking-[0.22em]">
           <Leaf size={12} className="shrink-0" />
           <span>Interactive prototype</span>
@@ -80,7 +82,7 @@ export default function Intro({ onStart, isTouch }) {
 
         <div className="mx-auto mt-10 max-w-sm rounded-3xl border border-[#d4f06a]/20 bg-[#0f1b12]/80 px-5 py-6 backdrop-blur-xl shadow-[0_20px_60px_-18px_rgba(0,0,0,0.9)]">
           <div className="mb-4 flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-[#d4f06a]/80">
-            <User size={13} /> Create your avatar
+            <UserRound size={13} /> Create your avatar
           </div>
 
           <div className="mb-4">
@@ -88,7 +90,7 @@ export default function Intro({ onStart, isTouch }) {
             <input
               type="text"
               value={playerName}
-              onChange={(e) => setPlayerName(e.target.value.trim())}
+              onChange={(e) => setPlayerName(e.target.value)}
               maxLength={20}
               className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-white text-sm outline-none focus:border-[#d4f06a] transition"
               placeholder="Visitor"

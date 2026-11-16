@@ -8,6 +8,8 @@ import {
   Map,
   MapPin,
   Maximize2,
+  MessageCircle,
+  Mic,
   MousePointer,
   Move,
   Settings,
@@ -33,18 +35,19 @@ export function SpotIcon({ icon, size = 16, className }) {
   return <Icon size={size} className={className} />
 }
 
-function IconButton({ label, onClick, active = false, children, className = '' }) {
+function IconButton({ label, onClick, active = false, children, className = '', disabled = false }) {
   return (
     <button
       type="button"
       aria-label={label}
       title={label}
       onClick={onClick}
+      disabled={disabled}
       className={`grid h-10 w-10 place-items-center rounded-xl border backdrop-blur-md transition-all ${
         active
           ? 'border-[#d4f06a]/50 bg-[#d4f06a] text-[#0a120d]'
           : 'border-white/10 bg-black/30 text-white/70 hover:border-white/25 hover:bg-white/10 hover:text-white'
-      } ${className}`}
+      } ${disabled ? 'cursor-not-allowed opacity-40' : ''} ${className}`}
     >
       {children}
     </button>
@@ -68,6 +71,11 @@ export default function Hud({
   onOpenSettings,
   onToggleHelp,
   onFullscreen,
+  chatOpen,
+  onToggleChat,
+  voiceEnabled,
+  voiceAvailable,
+  onToggleVoice,
 }) {
   const [snapshot, setSnapshot] = useState(() => ({
     location: getLocationName(game.position.x, game.position.z),
@@ -140,6 +148,17 @@ export default function Hud({
         </div>
 
         <div className="pointer-events-auto flex items-center gap-2">
+          <IconButton label="Open park chat" active={chatOpen} onClick={onToggleChat}>
+            <MessageCircle size={17} />
+          </IconButton>
+          <IconButton
+            label={voiceEnabled ? 'Turn off microphone' : 'Enable voice chat'}
+            active={voiceEnabled}
+            onClick={onToggleVoice}
+            disabled={!voiceAvailable && !voiceEnabled}
+          >
+            <Mic size={17} />
+          </IconButton>
           {!isTouch && (
             <IconButton
               label="Toggle guide (H)"

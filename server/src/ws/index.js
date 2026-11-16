@@ -52,6 +52,9 @@ export class ParkWebSocketServer {
     switch (msg.type) {
       case "join_park": {
         const { parkId, playerName, avatarType, avatarColor } = msg
+        const playerKey = typeof msg.playerKey === "string" && msg.playerKey.length <= 100
+          ? msg.playerKey
+          : playerName
         if (!parkId || !playerName) {
           this.send(ws, {
             type: "error",
@@ -64,10 +67,10 @@ export class ParkWebSocketServer {
           await this.leavePark(ws, info)
         }
 
-        let player = await PlayerModel.findByUsername(playerName)
+        let player = await PlayerModel.findByUsername(playerKey)
         if (!player) {
           player = await PlayerModel.create({
-            username: playerName,
+            username: playerKey,
             displayName: playerName,
             avatarType,
             avatarColor,
@@ -85,6 +88,7 @@ export class ParkWebSocketServer {
         info.playerName = playerName
         info.avatarType = avatarType || "default"
         info.avatarColor = avatarColor || "#ffffff"
+        info.voiceEnabled = false
 
         if (!this.parkRooms.has(parkId)) {
           this.parkRooms.set(parkId, new Set())
@@ -122,6 +126,7 @@ export class ParkWebSocketServer {
               displayName: player.display_name,
               avatarType: player.avatar_type,
               avatarColor: player.avatar_color,
+              voiceEnabled: false,
               x: msg.x ?? 0,
               y: msg.y ?? 0,
               z: msg.z ?? 0,
@@ -132,7 +137,7 @@ export class ParkWebSocketServer {
         )
 
         const players = await ParkPlayerModel.findActiveByParkId(parkId)
-        this.send(ws, { type: "player_list", players })
+        this.send(ws, { type: "player_list", players: this.withVoiceStatus(parkId, players) })
         break
       }
 
@@ -180,8 +185,8 @@ export class ParkWebSocketServer {
           return
         }
 
-        const { message } = msg
-        if (!message || typeof message !== "string") {
+        const message = typeof msg.message === "string" ? msg.message.trim().slice(0, 500) : ""
+        if (!message) {
           this.send(ws, { type: "error", error: "message is required" })
           return
         }
@@ -197,13 +202,48 @@ export class ParkWebSocketServer {
         break
       }
 
+      case "voice_status": {
+        if (!info.parkId || !info.playerId) {
+          this.send(ws, { type: "error", error: "not in a park" })
+          return
+        }
+        info.voiceEnabled = Boolean(msg.enabled)
+        this.broadcastToPark(info.parkId, {
+          type: "voice_status",
+          playerId: info.playerId,
+          enabled: info.voiceEnabled,
+        })
+        break
+      }
+
+      case "voice_signal": {
+        if (!info.parkId || !info.playerId) {
+          this.send(ws, { type: "error", error: "not in a park" })
+          return
+        }
+        const room = this.parkRooms.get(info.parkId)
+        const targetId = Number(msg.toPlayerId)
+        if (!Number.isInteger(targetId) || !msg.signal || typeof msg.signal !== "object") return
+        for (const peerWs of room || []) {
+          const peer = this.clients.get(peerWs)
+          if (peer?.playerId === targetId && peer.parkId === info.parkId) {
+            this.send(peerWs, {
+              type: "voice_signal",
+              fromPlayerId: info.playerId,
+              signal: msg.signal,
+            })
+          }
+        }
+        break
+      }
+
       case "get_players": {
         if (!info.parkId) {
           this.send(ws, { type: "error", error: "not in a park" })
           return
         }
         const players = await ParkPlayerModel.findActiveByParkId(info.parkId)
-        this.send(ws, { type: "player_list", players })
+        this.send(ws, { type: "player_list", players: this.withVoiceStatus(info.parkId, players) })
         break
       }
 
@@ -246,6 +286,7 @@ export class ParkWebSocketServer {
     info.playerName = null
     info.avatarType = null
     info.avatarColor = null
+    info.voiceEnabled = false
   }
 
   async handleDisconnect(ws) {
@@ -261,6 +302,20 @@ export class ParkWebSocketServer {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(payload))
     }
+  }
+
+  withVoiceStatus(parkId, players) {
+    const room = this.parkRooms.get(parkId)
+    const voiceEnabledIds = new Set(
+      [...(room || [])]
+        .map((peerWs) => this.clients.get(peerWs))
+        .filter((peer) => peer?.voiceEnabled)
+        .map((peer) => peer.playerId)
+    )
+    return players.map((player) => ({
+      ...player,
+      voice_enabled: voiceEnabledIds.has(player.player_id),
+    }))
   }
 
   broadcastToPark(parkId, payload, excludeWs) {

@@ -1,99 +1,57 @@
 # Virtual Park Server
 
-Express.js + PostgreSQL + WebSocket API backend for the Virtual Park frontend.
+Express, PostgreSQL, and WebSocket backend for the Virtual Park frontend.
 
-## Structure
+## Local setup
 
-```
-server/
-├── package.json
-├── .env.example          # copy to .env and edit
-├── .gitignore
-├── README.md
-├── src/
-│   ├── index.js          # Express app + HTTP server + WebSocket server
-│   ├── db.js             # pg connection pool + query helper
-│   ├── models/park.js    # Park, Feature, User data models
-│   ├── routes/api.js     # REST API routes (/api/*)
-│   ├── ws/index.js       # WebSocket server (park rooms, broadcast)
-│   └── scripts/
-│       ├── setup-db.js   # create tables
-│       └── seed.js       # seed sample data
-```
-
-## Prerequisites
-
-- Node.js (v18+)
-- PostgreSQL running (verified: `pg_isready` accepting connections)
-
-## Quick Start
+Requirements: Node.js 18+ and PostgreSQL.
 
 ```bash
-# 1. Install dependencies
-cd /Users/theinzawmyo/AI/VirturalPark/server
+cd server
 npm install
-
-# 2. Configure environment
 cp .env.example .env
-# edit .env if your Postgres credentials differ
+```
 
-# 3. Create database (optional: done manually or via psql)
-createdb virtual_park   # or: psql -c "CREATE DATABASE virtual_park;"
+Configure PostgreSQL in `.env`. To use the frontend's current Vite proxy and API defaults, set `PORT=5001`. Create the database and tables, seed the Lumen Park row, and start the server:
 
-# 4. Set up schema
+```bash
+createdb virtual_park
 npm run setup-db
-
-# 5. Seed sample data (optional)
 npm run seed
-
-# 6. Start dev server
 npm run dev
 ```
 
-Server: `http://localhost:5000`
-WebSocket: `ws://localhost:5000/ws`
+The server defaults to port `5000` when `PORT` is unset. The frontend currently expects port `5001`; if you use another port, update the proxy targets in `virtual-park/vite.config.js` and set `VITE_API_BASE` for the API URL.
 
-## API Endpoints
+## HTTP API
+
+All routes are prefixed with `/api`.
 
 | Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/health` | Health check |
-| GET | `/api/parks` | List parks |
-| GET | `/api/parks/:id` | Get a park |
-| POST | `/api/parks` | Create a park |
-| PUT | `/api/parks/:id` | Update a park |
-| DELETE | `/api/parks/:id` | Delete a park |
-| GET | `/api/parks/:parkId/features` | List features in a park |
-| POST | `/api/parks/:parkId/features` | Add a feature |
-| PUT | `/api/features/:id` | Update a feature |
-| DELETE | `/api/features/:id` | Delete a feature |
-| GET | `/api/users` | List users |
-| POST | `/api/users` | Create a user |
+| --- | --- | --- |
+| GET | `/health` | Health check |
+| GET, POST | `/parks` | List or create parks |
+| GET, PUT, DELETE | `/parks/:id` | Read, update, or delete a park |
+| GET, POST | `/parks/:parkId/features` | List or create park features |
+| PUT, DELETE | `/features/:id` | Update or delete a feature |
+| GET, POST | `/users` | List or create users |
+| GET, POST | `/players` | List or create player profiles |
+| GET, PUT | `/players/:id` | Read or update a player profile |
+| GET | `/parks/:parkId/players` | List active players in a park |
 
-## WebSocket (`/ws`)
+## WebSocket protocol
 
-Message types (client → server):
+Connect to `/ws`. Messages use JSON. The client can send:
 
-- `{ type: 'join_park', parkId, userId }` — join a park room
-- `{ type: 'leave_park' }` — leave current park room
-- `{ type: 'feature_update', feature: {...} }` — broadcast feature change to park room
-- `{ type: 'ping' }` — heartbeat
+- `join_park` — join a park with a session player key, display name, avatar, and starting position.
+- `leave_park` — leave the current park.
+- `player_move` — broadcast and save the player's position and rotation.
+- `get_players` — request the current park player list.
+- `chat_message` — send a text message to the park room (maximum 500 characters).
+- `voice_status` — announce whether the player has enabled their microphone.
+- `voice_signal` — relay a WebRTC offer, answer, or ICE candidate to a player in the same park room.
+- `ping` — request a heartbeat response.
 
-Server → client messages:
+The server sends `welcome`, `joined_park`, `player_list`, `player_joined`, `player_left`, `player_moved`, `chat_message`, `voice_status`, `voice_signal`, `left_park`, `pong`, and `error` messages as appropriate.
 
-- `{ type: 'welcome', clientId }`
-- `{ type: 'joined_park', parkId }`
-- `{ type: 'user_joined', userId, clientId }` (broadcast to room)
-- `{ type: 'user_left', userId, clientId }` (broadcast to room)
-- `{ type: 'feature_updated', feature, updatedBy }` (broadcast to room)
-- `{ type: 'pong', ts }`
-- `{ type: 'error', error }`
-
-## Frontend Integration (Vite + React)
-
-The frontend lives in `../virtual-park`. It can call `http://localhost:5000/api/...`
-and connect to `ws://localhost:5000/ws`. Enable CORS (already configured) and make
-sure both dev servers run simultaneously:
-
-- Frontend: `cd virtual-park && npm run dev` (default `http://localhost:5173`)
-- Backend: `cd server && npm run dev` (default `http://localhost:5000`)
+Voice audio is peer-to-peer; this server only relays WebRTC signaling. The frontend uses STUN by default and can be configured with `VITE_TURN_URLS`, `VITE_TURN_USERNAME`, and `VITE_TURN_CREDENTIAL` when a TURN relay is needed.

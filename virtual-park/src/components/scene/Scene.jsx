@@ -8,7 +8,7 @@ import { Bench, InfoBoard, Lamppost, Pagoda } from './Props'
 import { BENCHES, LAMPS } from '../../game/layout'
 import { TIME_PRESETS } from '../../game/presets'
 
-export default function Scene({ settings, onInteract, remotePlayers, localPlayerId }) {
+export default function Scene({ settings, onInteract, remotePlayers, localPlayerId, avatarType, avatarColor }) {
   const shadows = settings.shadows
   const preset = TIME_PRESETS[settings.timeOfDay]
 
@@ -34,7 +34,7 @@ export default function Scene({ settings, onInteract, remotePlayers, localPlayer
 
       {settings.showMarkers && <Markers />}
 
-      <Player shadows={shadows} onInteract={onInteract} />
+      <Player shadows={shadows} onInteract={onInteract} avatarType={avatarType} avatarColor={avatarColor} />
 
       {remotePlayers.length > 0 && (
         <OtherPlayers players={remotePlayers} localPlayerId={localPlayerId} />

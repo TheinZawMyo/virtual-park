@@ -3,7 +3,7 @@ import { Canvas } from '@react-three/fiber'
 import { AdaptiveDpr } from '@react-three/drei'
 import Scene from './Scene'
 
-export default function Experience({ settings, onInteract, remotePlayers, localPlayerId }) {
+export default function Experience({ settings, onInteract, remotePlayers, localPlayerId, avatarType, avatarColor }) {
   return (
     <Canvas
       shadows="percentage"
@@ -13,7 +13,7 @@ export default function Experience({ settings, onInteract, remotePlayers, localP
       style={{ position: 'absolute', inset: 0 }}
     >
       <Suspense fallback={null}>
-        <Scene settings={settings} onInteract={onInteract} remotePlayers={remotePlayers} localPlayerId={localPlayerId} />
+        <Scene settings={settings} onInteract={onInteract} remotePlayers={remotePlayers} localPlayerId={localPlayerId} avatarType={avatarType} avatarColor={avatarColor} />
       </Suspense>
       <AdaptiveDpr pixelated />
     </Canvas>
