@@ -1,0 +1,20 @@
+{
+  "name": "virtual-park-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Express.js + PostgreSQL + WebSocket API for the Virtual Park frontend",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "setup-db": "node src/scripts/setup-db.js",
+    "seed": "node src/scripts/seed.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pg": "^8.13.3",
+    "ws": "^8.18.1"
+  }
+}
