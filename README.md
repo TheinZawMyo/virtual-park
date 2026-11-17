@@ -7,6 +7,7 @@ Lumen Park is a small 3D park built with React, Three.js, and React Three Fiber.
 - Walk around the park with WASD or the on-screen joystick.
 - Choose an Explorer, Robot, or Dino avatar.
 - See other players and their movement in real time.
+- When a player leaves the page, disconnect them and remove their avatar from the park.
 - Send group text messages to nearby players using the chat button in the upper-right corner. The chat closes when no one is within about 14 game units.
 - Turn on the microphone to talk with nearby players. Voice and text both disconnect across the same 14-unit range; listeners do not need to turn on their microphones.
 - Walk up to the Burmese information sign (`လမ်းညွှန်ဆိုင်းဘုတ်`) and press `E` or use its prompt to open the detailed park map.

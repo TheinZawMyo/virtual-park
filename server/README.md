@@ -54,4 +54,6 @@ Connect to `/ws`. Messages use JSON. The client can send:
 
 The server sends `welcome`, `joined_park`, `player_list`, `player_joined`, `player_left`, `player_moved`, `chat_message`, `voice_status`, `voice_signal`, `left_park`, `pong`, and `error` messages as appropriate.
 
+When a client disconnects, the server marks its park presence inactive and broadcasts `player_left` to the remaining players.
+
 Voice audio is peer-to-peer; this server only relays WebRTC signaling. The frontend uses STUN by default and can be configured with `VITE_TURN_URLS`, `VITE_TURN_USERNAME`, and `VITE_TURN_CREDENTIAL` when a TURN relay is needed.

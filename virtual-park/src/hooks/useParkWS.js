@@ -52,6 +52,7 @@ export function useParkWS({ parkId, playerName, avatarType, avatarColor, onMessa
     }
 
     ws.onclose = () => {
+      if (wsRef.current !== ws) return
       setConnected(false)
       wsRef.current = null
       if (stoppedRef.current) return
@@ -137,7 +138,8 @@ export function useParkWS({ parkId, playerName, avatarType, avatarColor, onMessa
   useEffect(() => {
     stoppedRef.current = false
     connect()
-    return () => {
+
+    const disconnect = () => {
       stoppedRef.current = true
       if (reconnectRef.current) {
         window.clearTimeout(reconnectRef.current)
@@ -156,6 +158,24 @@ export function useParkWS({ parkId, playerName, avatarType, avatarColor, onMessa
       } else {
         ws.close()
       }
+    }
+
+    const handlePageHide = () => {
+      setConnected(false)
+      disconnect()
+    }
+
+    const reconnect = () => {
+      stoppedRef.current = false
+      connect()
+    }
+
+    window.addEventListener('pagehide', handlePageHide)
+    window.addEventListener('pageshow', reconnect)
+    return () => {
+      window.removeEventListener('pagehide', handlePageHide)
+      window.removeEventListener('pageshow', reconnect)
+      disconnect()
     }
   }, [connect])
 

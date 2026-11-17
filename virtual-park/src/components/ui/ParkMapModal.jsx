@@ -1,8 +1,9 @@
 import { X } from 'lucide-react'
-import { BENCHES, BOARD, LAMPS, PAGODA, POND, STEPPING_STONES, TREES } from '../../game/layout'
+import { BENCHES, BOARD, FOUNTAIN, LAMPS, PAGODA, PARK_RADIUS, PATH_HALF, PLAZA_RADIUS, POND, STEPPING_STONES, TREES } from '../../game/layout'
 
 const CENTER = 360
-const SCALE = 8
+const MAP_RADIUS = 272
+const SCALE = MAP_RADIUS / PARK_RADIUS
 
 function point(x, z) {
   return [CENTER + x * SCALE, CENTER + z * SCALE]
@@ -27,7 +28,7 @@ function MapGraphic() {
   return (
     <svg viewBox="0 0 720 720" className="h-full w-full" role="img" aria-label="Lumen Park map">
       <defs>
-        <clipPath id="park-clip"><circle cx={CENTER} cy={CENTER} r="272" /></clipPath>
+        <clipPath id="park-clip"><circle cx={CENTER} cy={CENTER} r={MAP_RADIUS} /></clipPath>
         <pattern id="water-lines" width="18" height="18" patternUnits="userSpaceOnUse">
           <path d="M0 9 Q4 5 9 9 T18 9" fill="none" stroke="#b4e2dc" strokeOpacity=".22" strokeWidth="2" />
         </pattern>
@@ -41,11 +42,24 @@ function MapGraphic() {
           return <circle key={tree.id} cx={x} cy={y} r={tree.type === 'pine' ? 5 : 6} fill={tree.color === undefined ? '#426b3e' : ['#5f9648', '#528a43', '#6ba14e', '#497f3d', '#7aa855'][tree.color]} opacity=".62" />
         })}
 
-        <path d="M360 82 L360 638 M82 360 L638 360" fill="none" stroke="#a89b78" strokeWidth="38" strokeLinecap="round" />
-        <path d="M360 82 L360 638 M82 360 L638 360" fill="none" stroke="#d8c99e" strokeOpacity=".42" strokeWidth="2" strokeDasharray="9 12" />
-        <circle cx={CENTER} cy={CENTER} r="52" fill="#c9b98e" stroke="#eee1bd" strokeWidth="5" />
-        <circle cx={CENTER} cy={CENTER} r="36" fill="#a8a18f" stroke="#efe7d4" strokeWidth="3" />
-        <circle cx={CENTER} cy={CENTER} r="19" fill="#579aaa" stroke="#d8e8dc" strokeWidth="3" />
+        <path
+          d={`M${CENTER} ${CENTER - MAP_RADIUS} L${CENTER} ${CENTER + MAP_RADIUS} M${CENTER - MAP_RADIUS} ${CENTER} L${CENTER + MAP_RADIUS} ${CENTER}`}
+          fill="none"
+          stroke="#a89b78"
+          strokeWidth={PATH_HALF * 2 * SCALE}
+          strokeLinecap="round"
+        />
+        <path
+          d={`M${CENTER} ${CENTER - MAP_RADIUS} L${CENTER} ${CENTER + MAP_RADIUS} M${CENTER - MAP_RADIUS} ${CENTER} L${CENTER + MAP_RADIUS} ${CENTER}`}
+          fill="none"
+          stroke="#d8c99e"
+          strokeOpacity=".42"
+          strokeWidth="2"
+          strokeDasharray="9 12"
+        />
+        <circle cx={CENTER} cy={CENTER} r={(PLAZA_RADIUS + 0.3) * SCALE} fill="#c9b98e" stroke="#eee1bd" strokeWidth="5" />
+        <circle cx={CENTER} cy={CENTER} r={4.5 * SCALE} fill="#a8a18f" stroke="#efe7d4" strokeWidth="3" />
+        <circle cx={CENTER} cy={CENTER} r={FOUNTAIN.r * SCALE} fill="#579aaa" stroke="#d8e8dc" strokeWidth="3" />
 
         <path d={`M${point(3.7, -3.7).join(' ')} L${point(9.2, -9.2).join(' ')}`} fill="none" stroke="#d8c99e" strokeWidth="11" strokeDasharray="3 11" strokeLinecap="round" />
         {STEPPING_STONES.map((stone, index) => {

@@ -99,10 +99,10 @@ export default function Atmosphere({ timeOfDay, shadows }) {
         color={preset.sunColor}
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
-        shadow-camera-left={-42}
-        shadow-camera-right={42}
-        shadow-camera-top={42}
-        shadow-camera-bottom={-42}
+        shadow-camera-left={-56}
+        shadow-camera-right={56}
+        shadow-camera-top={56}
+        shadow-camera-bottom={-56}
         shadow-camera-near={1}
         shadow-camera-far={240}
         shadow-bias={-0.0005}

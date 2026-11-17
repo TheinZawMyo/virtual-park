@@ -1,5 +1,7 @@
 import Atmosphere from './Atmosphere'
 import Terrain from './Terrain'
+import Roads from './Roads'
+import Skyline from './Skyline'
 import Vegetation from './Vegetation'
 import Markers from './Markers'
 import Player from './Player'
@@ -16,6 +18,8 @@ export default function Scene({ settings, onInteract, remotePlayers, localPlayer
     <>
       <Atmosphere timeOfDay={settings.timeOfDay} shadows={shadows} />
       <Terrain shadows={shadows} />
+      <Roads />
+      <Skyline shadows={shadows} glow={preset.lamp} />
       <Vegetation shadows={shadows} />
 
       {BENCHES.map((bench) => (

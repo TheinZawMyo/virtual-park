@@ -57,7 +57,7 @@ function Hills() {
     const list = []
     for (let i = 0; i < 16; i += 1) {
       const angle = (i / 16) * Math.PI * 2 + 0.2
-      const radius = 66 + (i % 4) * 9
+      const radius = 122 + (i % 4) * 11
       list.push({
         x: Math.cos(angle) * radius,
         z: Math.sin(angle) * radius,
@@ -88,7 +88,7 @@ function Hills() {
 
 function Fence({ shadows }) {
   const segments = useMemo(() => {
-    const count = 32
+    const count = 44
     const radius = PARK_RADIUS - 1
     const posts = []
     for (let i = 0; i < count; i += 1) {
@@ -160,7 +160,7 @@ function Fence({ shadows }) {
 
 export default function Terrain({ shadows }) {
   const grass = useGrassTexture()
-  const groundRadius = PARK_RADIUS + 10
+  const groundRadius = PARK_RADIUS + 12
 
   return (
     <group>

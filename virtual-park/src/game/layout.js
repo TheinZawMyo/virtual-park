@@ -1,8 +1,11 @@
-export const PARK_RADIUS = 34
+export const PARK_RADIUS = 44
 export const PLAYER_RADIUS = 0.42
 export const PROXIMITY_RANGE = 14
 export const PATH_HALF = 2.2
 export const PLAZA_RADIUS = 6.2
+export const RING_ROAD = { inner: 46.5, outer: 53.5, center: 50, sidewalk: 56 }
+export const AVENUE_HALF = 4
+export const AVENUE_LENGTH = 95
 export const POND = { x: 15, z: -14, r: 6.6 }
 export const PAGODA = { x: -17, z: -15, r: 4.5 }
 export const FOUNTAIN = { x: 0, z: 0, r: 2.45 }
@@ -78,6 +81,10 @@ export const LAMPS = [
   { x: 16, z: -3.2 },
   { x: -3.2, z: 26.5 },
   { x: 3.2, z: -26.5 },
+  { x: -3.2, z: 36 },
+  { x: 3.2, z: -36 },
+  { x: -36, z: 3.2 },
+  { x: 36, z: -3.2 },
 ]
 
 const stoneStart = { x: 3.7, z: -3.7 }
@@ -113,7 +120,7 @@ const dist2 = (ax, az, bx, bz) => {
 
 export const TREES = []
 let treeAttempts = 0
-while (TREES.length < 88 && treeAttempts < 12000) {
+while (TREES.length < 140 && treeAttempts < 24000) {
   treeAttempts += 1
   const angle = rand() * Math.PI * 2
   const radius = Math.sqrt(rand()) * (PARK_RADIUS - 4.5)
@@ -137,7 +144,7 @@ while (TREES.length < 88 && treeAttempts < 12000) {
 
 export const TUFTS = []
 let tuftAttempts = 0
-while (TUFTS.length < 380 && tuftAttempts < 5000) {
+while (TUFTS.length < 560 && tuftAttempts < 9000) {
   tuftAttempts += 1
   const angle = rand() * Math.PI * 2
   const radius = Math.sqrt(rand()) * (PARK_RADIUS - 2.4)
@@ -159,7 +166,7 @@ while (TUFTS.length < 380 && tuftAttempts < 5000) {
 const FLOWER_COLORS = ['#f7e7a9', '#f4b8c6', '#e8e4d4', '#f0c96f', '#c9b6e8']
 export const FLOWERS = []
 let flowerAttempts = 0
-while (FLOWERS.length < 130 && flowerAttempts < 4000) {
+while (FLOWERS.length < 220 && flowerAttempts < 7000) {
   flowerAttempts += 1
   const angle = rand() * Math.PI * 2
   const radius = Math.sqrt(rand()) * (PARK_RADIUS - 3.2)
